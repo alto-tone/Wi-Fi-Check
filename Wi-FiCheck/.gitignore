@@ -1,0 +1,33 @@
+.gradle
+/local.properties
+.DS_Store
+/build
+/captures
+
+*.iml
+
+
+### .idea以下を対象とした設定
+
+/.idea/*.xml
+
+## *.xmlで対応しきれない。。。
+/.idea/libraries
+/.idea/dictionaries
+
+## !指定は無視されない
+!/.idea/codeStyleSettings.xml
+!/.idea/copyright/*.xml
+!/.idea/fileColors.xml
+!/.idea/encodings.xml
+!/.idea/gradle.xml
+!/.idea/runConfigurations/*.xml
+
+!/.idea/inspectionProfiles/*.xml
+/.idea/inspectionProfiles/profiles_settings.xml
+
+!/.idea/scopes/*.xml
+/.idea/scopes/scope_settings.xml
+
+!/.idea/templateLanguages.xml
+!/.idea/vcs.xml
