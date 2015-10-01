@@ -19,6 +19,8 @@
                 android:resource="@xml/wi_fi_check_info" />
         </receiver>
 
+        <service android:name=".WiFiCheck$WidgetService"/>
+
         <activity android:name=".WiFiCheckConfigureActivity" >
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
