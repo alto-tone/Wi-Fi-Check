@@ -7,7 +7,8 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
-import android.widget.EditText;
+
+import java.util.Map;
 
 /**
  * The configuration screen for the {@link WiFiCheck WiFiCheck} AppWidget.
@@ -15,9 +16,10 @@ import android.widget.EditText;
 public class WiFiCheckConfigureActivity extends Activity {
 
     int mAppWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID;
-    EditText mAppWidgetText;
     private static final String PREFS_NAME = "jp.altotone.wi_ficheck.WiFiCheck";
     private static final String PREF_PREFIX_KEY = "appwidget_";
+
+    private static final String PREF_WIDGETS_IDS = "widget_ids";
 
     public WiFiCheckConfigureActivity() {
         super();
@@ -32,7 +34,6 @@ public class WiFiCheckConfigureActivity extends Activity {
         setResult(RESULT_CANCELED);
 
         setContentView(R.layout.wi_fi_check_configure);
-        mAppWidgetText = (EditText) findViewById(R.id.appwidget_text);
         findViewById(R.id.add_button).setOnClickListener(mOnClickListener);
 
         // Find the widget id from the intent.
@@ -48,16 +49,14 @@ public class WiFiCheckConfigureActivity extends Activity {
             return;
         }
 
-        mAppWidgetText.setText(loadTitlePref(WiFiCheckConfigureActivity.this, mAppWidgetId));
+        saveIdPref(this, mAppWidgetId);
     }
 
     View.OnClickListener mOnClickListener = new View.OnClickListener() {
         public void onClick(View v) {
             final Context context = WiFiCheckConfigureActivity.this;
 
-            // When the button is clicked, store the string locally
-            String widgetText = mAppWidgetText.getText().toString();
-            saveTitlePref(context, mAppWidgetId, widgetText);
+            // TODO prefに保存する必要があるものがあれば保存
 
             // It is the responsibility of the configuration activity to update the app widget
             AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
@@ -71,26 +70,20 @@ public class WiFiCheckConfigureActivity extends Activity {
         }
     };
 
-    // Write the prefix to the SharedPreferences object for this widget
-    static void saveTitlePref(Context context, int appWidgetId, String text) {
+    static void saveIdPref(Context context, int appWidgetId) {
         SharedPreferences.Editor prefs = context.getSharedPreferences(PREFS_NAME, 0).edit();
-        prefs.putString(PREF_PREFIX_KEY + appWidgetId, text);
-        prefs.apply();
-    }
-
-    // Read the prefix from the SharedPreferences object for this widget.
-    // If there is no preference saved, get the default from a resource
-    static String loadTitlePref(Context context, int appWidgetId) {
-        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, 0);
-        String titleValue = prefs.getString(PREF_PREFIX_KEY + appWidgetId, null);
-        if (titleValue != null) {
-            return titleValue;
-        } else {
-            return context.getString(R.string.appwidget_text);
+        if (!context.getSharedPreferences(PREFS_NAME, 0).contains(PREF_PREFIX_KEY + appWidgetId)) {
+            prefs.putInt(PREF_PREFIX_KEY + appWidgetId, appWidgetId);
+            prefs.apply();
         }
     }
 
-    static void deleteTitlePref(Context context, int appWidgetId) {
+    static Map<String, ?> loadIdsPref(Context context) {
+        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, 0);
+        return prefs.getAll();
+    }
+
+    static void deleteIdPref(Context context, int appWidgetId) {
         SharedPreferences.Editor prefs = context.getSharedPreferences(PREFS_NAME, 0).edit();
         prefs.remove(PREF_PREFIX_KEY + appWidgetId);
         prefs.apply();

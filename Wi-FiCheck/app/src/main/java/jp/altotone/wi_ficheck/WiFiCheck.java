@@ -1,5 +1,6 @@
 package jp.altotone.wi_ficheck;
 
+import android.app.ActivityManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.appwidget.AppWidgetManager;
@@ -8,6 +9,8 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.IBinder;
@@ -15,25 +18,40 @@ import android.provider.Settings;
 import android.util.Log;
 import android.widget.RemoteViews;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 /**
  * Implementation of App Widget functionality.
  * App Widget Configuration implemented in {@link WiFiCheckConfigureActivity WiFiCheckConfigureActivity}
  */
 public class WiFiCheck extends AppWidgetProvider {
 
-    private static int[] mAppWidgetIds;
-
-    private Intent mServiceIntent;
+    private boolean isRunningService(Context context) {
+        ActivityManager activityManager = (ActivityManager)context.getSystemService(Context.ACTIVITY_SERVICE);
+        List<ActivityManager.RunningServiceInfo> listServiceInfo = activityManager.getRunningServices(Integer.MAX_VALUE);
+        boolean result = false;
+        for (ActivityManager.RunningServiceInfo curr : listServiceInfo) {
+            // クラス名を比較
+            if (curr.service.getClassName().equals(WidgetService.class.getName())) {
+                // 実行中のサービスと一致
+                result = true;
+                break;
+            }
+        }
+        return result;
+    }
 
     @Override
     public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
         // There may be multiple widgets active, so update all of them
         Log.d("life", "onUpdate");
 
-        mServiceIntent = new Intent(context, WidgetService.class);
-        context.startService(mServiceIntent);
-
-        mAppWidgetIds = appWidgetIds;
+        if (!isRunningService(context)) {
+            Intent intent = new Intent(context, WidgetService.class);
+            context.startService(intent);
+        }
 
         for (int appWidgetId : appWidgetIds) {
             updateAppWidget(context, appWidgetManager, appWidgetId);
@@ -44,9 +62,17 @@ public class WiFiCheck extends AppWidgetProvider {
     public void onDeleted(Context context, int[] appWidgetIds) {
         Log.d("life", "onDeleted");
         // When the user deletes the widget, delete the preference associated with it.
-        final int N = appWidgetIds.length;
         for (int appWidgetId : appWidgetIds) {
-            WiFiCheckConfigureActivity.deleteTitlePref(context, appWidgetId);
+            WiFiCheckConfigureActivity.deleteIdPref(context, appWidgetId);
+        }
+
+        //idが1つも登録されていない場合は、service停止
+        Map<String, ?> ids = WiFiCheckConfigureActivity.loadIdsPref(context);
+        if (ids == null || ids.size() == 0) {
+            if (isRunningService(context)) {
+                Intent intent = new Intent(context, WidgetService.class);
+                context.stopService(intent);
+            }
         }
     }
 
@@ -67,13 +93,22 @@ public class WiFiCheck extends AppWidgetProvider {
 
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.wi_fi_check);
 
-        //Wi-Fi情報をセット
-        StringBuilder sb = new StringBuilder();
-        WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
-        WifiInfo w_info = wifiManager.getConnectionInfo();
+        ConnectivityManager manager = (ConnectivityManager)context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo info = manager.getActiveNetworkInfo();
 
-        sb.append("SSID : ");
-        sb.append(w_info.getSSID());
+        StringBuilder sb = new StringBuilder();
+        if (info.getType() == ConnectivityManager.TYPE_WIFI) {
+            //Wi-Fi情報をセット
+            WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
+            WifiInfo w_info = wifiManager.getConnectionInfo();
+
+            sb.append("Wi-Fi : ");
+            sb.append(w_info.getSSID());
+        } else if (info.getType() == ConnectivityManager.TYPE_MOBILE){
+            sb.append("Mobile");
+        } else {
+            sb.append("Unknown");
+        }
 
         views.setTextViewText(R.id.appwidget_text, sb.toString());
 
@@ -91,18 +126,6 @@ public class WiFiCheck extends AppWidgetProvider {
         public IBinder onBind(Intent in) {
             Log.d("life","onBind");
             return null;
-        }
-
-        @Override
-        public boolean onUnbind(Intent intent) {
-            Log.d("life","onUnbind");
-            return super.onUnbind(intent);
-        }
-
-        @Override
-        public void onTaskRemoved(Intent rootIntent) {
-            super.onTaskRemoved(rootIntent);
-            Log.d("life", "onTaskRemoved");
         }
 
         @Override
@@ -134,9 +157,19 @@ public class WiFiCheck extends AppWidgetProvider {
         public void onReceive(Context context, Intent intent) {
             Log.d("BroadcastReceiver", "ネットワーク変更！");
 
-            if (mAppWidgetIds != null) {
-                for (int appWidgetId : mAppWidgetIds) {
-                    updateAppWidget(context, AppWidgetManager.getInstance(context), appWidgetId);
+            Map<String, ?> appWidgetIds = WiFiCheckConfigureActivity.loadIdsPref(context);
+
+            if (appWidgetIds != null) {
+                Set entries = appWidgetIds.entrySet();
+
+                for (Object entry1 : entries) {
+                    Map.Entry entry = (Map.Entry) entry1;
+                    try {
+                        int id = Integer.parseInt(entry.getValue().toString());
+                        updateAppWidget(context, AppWidgetManager.getInstance(context), id);
+                    } catch (NumberFormatException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
         }
