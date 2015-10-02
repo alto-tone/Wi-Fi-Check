@@ -16,6 +16,7 @@
         android:textSize="24sp"
         android:textStyle="bold|italic"
         android:layout_margin="8dp"
-        android:contentDescription="@string/appwidget_text"/>
+        android:contentDescription="@string/appwidget_text"
+        android:gravity="center"/>
 
 </RelativeLayout>
