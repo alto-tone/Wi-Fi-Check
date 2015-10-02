@@ -22,11 +22,6 @@
 
         <service android:name=".WiFiCheck$WidgetService"/>
 
-        <activity android:name=".WiFiCheckConfigureActivity" >
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
-            </intent-filter>
-        </activity>
     </application>
 
 </manifest>

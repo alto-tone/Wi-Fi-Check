@@ -2,7 +2,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:padding="@dimen/widget_margin"
-                android:background="#09C">
+                android:background="@drawable/rounded_corners_frame"
+                android:id="@+id/widget">
 
     <TextView
         android:id="@+id/appwidget_text"
@@ -15,7 +16,6 @@
         android:textSize="24sp"
         android:textStyle="bold|italic"
         android:layout_margin="8dp"
-        android:contentDescription="@string/appwidget_text"
-        android:background="#09C"/>
+        android:contentDescription="@string/appwidget_text"/>
 
 </RelativeLayout>

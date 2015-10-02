@@ -3,9 +3,7 @@
                     android:minWidth="40dp"
                     android:minHeight="40dp"
                     android:updatePeriodMillis="1000"
-                    android:previewImage="@drawable/example_appwidget_preview"
                     android:initialLayout="@layout/wi_fi_check"
-                    android:configure="jp.altotone.wi_ficheck.WiFiCheckConfigureActivity"
                     android:resizeMode="horizontal|vertical"
                     android:widgetCategory="home_screen"
                     android:initialKeyguardLayout="@layout/wi_fi_check">

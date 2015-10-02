@@ -9,6 +9,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.wifi.WifiInfo;
@@ -23,10 +24,12 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Implementation of App Widget functionality.
- * App Widget Configuration implemented in {@link WiFiCheckConfigureActivity WiFiCheckConfigureActivity}
+ *
  */
 public class WiFiCheck extends AppWidgetProvider {
+
+    private static final String PREFS_NAME = "jp.altotone.wi_ficheck.WiFiCheck";
+    private static final String PREF_PREFIX_KEY = "appwidget_";
 
     private boolean isRunningService(Context context) {
         ActivityManager activityManager = (ActivityManager)context.getSystemService(Context.ACTIVITY_SERVICE);
@@ -54,6 +57,7 @@ public class WiFiCheck extends AppWidgetProvider {
         }
 
         for (int appWidgetId : appWidgetIds) {
+            saveIdPref(context, appWidgetId);
             updateAppWidget(context, appWidgetManager, appWidgetId);
         }
     }
@@ -63,11 +67,11 @@ public class WiFiCheck extends AppWidgetProvider {
         Log.d("life", "onDeleted");
         // When the user deletes the widget, delete the preference associated with it.
         for (int appWidgetId : appWidgetIds) {
-            WiFiCheckConfigureActivity.deleteIdPref(context, appWidgetId);
+            deleteIdPref(context, appWidgetId);
         }
 
         //idが1つも登録されていない場合は、service停止
-        Map<String, ?> ids = WiFiCheckConfigureActivity.loadIdsPref(context);
+        Map<String, ?> ids = loadIdsPref(context);
         if (ids == null || ids.size() == 0) {
             if (isRunningService(context)) {
                 Intent intent = new Intent(context, WidgetService.class);
@@ -89,7 +93,7 @@ public class WiFiCheck extends AppWidgetProvider {
     }
 
     static void updateAppWidget(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
-        Log.d("life","updateAppWidget");
+        Log.d("life", "updateAppWidget");
 
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.wi_fi_check);
 
@@ -115,7 +119,7 @@ public class WiFiCheck extends AppWidgetProvider {
         Intent intent = new Intent();
         intent.setAction(Settings.ACTION_WIFI_SETTINGS);
         PendingIntent pendingIntent = PendingIntent.getActivity(context, appWidgetId, intent, 0);
-        views.setOnClickPendingIntent(R.id.appwidget_text, pendingIntent);
+        views.setOnClickPendingIntent(R.id.widget, pendingIntent);
 
         // Instruct the widget manager to update the widget
         appWidgetManager.updateAppWidget(appWidgetId, views);
@@ -157,7 +161,7 @@ public class WiFiCheck extends AppWidgetProvider {
         public void onReceive(Context context, Intent intent) {
             Log.d("BroadcastReceiver", "ネットワーク変更！");
 
-            Map<String, ?> appWidgetIds = WiFiCheckConfigureActivity.loadIdsPref(context);
+            Map<String, ?> appWidgetIds = loadIdsPref(context);
 
             if (appWidgetIds != null) {
                 Set entries = appWidgetIds.entrySet();
@@ -174,5 +178,24 @@ public class WiFiCheck extends AppWidgetProvider {
             }
         }
     };
+
+    static void saveIdPref(Context context, int appWidgetId) {
+        SharedPreferences.Editor prefs = context.getSharedPreferences(PREFS_NAME, 0).edit();
+        if (!context.getSharedPreferences(PREFS_NAME, 0).contains(PREF_PREFIX_KEY + appWidgetId)) {
+            prefs.putInt(PREF_PREFIX_KEY + appWidgetId, appWidgetId);
+            prefs.apply();
+        }
+    }
+
+    static Map<String, ?> loadIdsPref(Context context) {
+        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, 0);
+        return prefs.getAll();
+    }
+
+    static void deleteIdPref(Context context, int appWidgetId) {
+        SharedPreferences.Editor prefs = context.getSharedPreferences(PREFS_NAME, 0).edit();
+        prefs.remove(PREF_PREFIX_KEY + appWidgetId);
+        prefs.apply();
+    }
 }
 
